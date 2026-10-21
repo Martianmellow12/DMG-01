@@ -1,0 +1,7 @@
+[workspace]
+members = [
+  "crates/dmg-core",
+  "crates/emulator",
+]
+
+resolver = "3"
