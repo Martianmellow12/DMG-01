@@ -7,7 +7,10 @@ fn run_emulator() -> Result<(), Box<dyn std::error::Error>> {
     println!("Load the boot ROM...");
     cpu.memory.load_file("docs/dmg_boot/dmg_boot.bin", 0)?;
 
-    Ok(())
+    println!("Beginning execution...");
+    loop {
+        cpu.step();
+    }
 }
 
 fn main() {

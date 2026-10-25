@@ -69,7 +69,7 @@ impl RegisterFile {
     }
 
     /// Register accessors
-    fn read_reg8(&self, reg: Reg8) -> u8 {
+    pub fn read_reg8(&self, reg: Reg8) -> u8 {
         match reg {
             Reg8::A => self.reg_a,
             Reg8::B => self.reg_b,
@@ -81,7 +81,7 @@ impl RegisterFile {
         }
     }
 
-    fn write_reg8(&mut self, reg: Reg8, val: u8) {
+    pub fn write_reg8(&mut self, reg: Reg8, val: u8) {
         match reg {
             Reg8::A => self.reg_a = val,
             Reg8::B => self.reg_b = val,
@@ -93,7 +93,7 @@ impl RegisterFile {
         }
     }
 
-    fn read_reg16(&self, reg: Reg16) -> u16 {
+    pub fn read_reg16(&self, reg: Reg16) -> u16 {
         match reg {
             Reg16::AF => {
                 let mut result = (self.reg_a as u16) << 8;
@@ -111,7 +111,7 @@ impl RegisterFile {
         }
     }
 
-    fn write_reg16(&mut self, reg: Reg16, val: u16) {
+    pub fn write_reg16(&mut self, reg: Reg16, val: u16) {
         match reg {
             Reg16::AF => {
                 self.reg_a = (val >> 8) as u8;
@@ -137,7 +137,7 @@ impl RegisterFile {
         }
     }
 
-    fn read_regf(&mut self, reg: RegF) -> bool {
+    pub fn read_regf(&mut self, reg: RegF) -> bool {
         match reg {
             RegF::Fz => self.reg_fz,
             RegF::Fn => self.reg_fn,
@@ -146,7 +146,7 @@ impl RegisterFile {
         }
     }
 
-    fn write_regf(&mut self, reg: RegF, val: bool) {
+    pub fn write_regf(&mut self, reg: RegF, val: bool) {
         match reg {
             RegF::Fz => self.reg_fz = val,
             RegF::Fn => self.reg_fn = val,
