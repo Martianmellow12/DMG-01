@@ -1,16 +1,20 @@
 mod registers;
+mod memory;
+mod error;
 
-use registers::{Register, RegisterFile};
+use error::HardwareError;
+use registers::{RegisterFile};
 
-struct Cpu {
-    registers: RegisterFile,
+pub struct Cpu {
+    pub registers: RegisterFile,
+    pub memory: memory::Memory,
 }
 
 impl Cpu {
-    pub fn new() -> Self {}
-
-    /// Register accessors
-    pub fn read_reg8(reg: registers::Register) -> u8 {
-        match reg {}
+    pub fn new() -> Self {
+        Self {
+            registers: RegisterFile::new(),
+            memory: memory::Memory::new(),
+        }
     }
 }

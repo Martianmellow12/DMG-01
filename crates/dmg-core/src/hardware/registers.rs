@@ -1,8 +1,5 @@
-use crate::Result;
-
 #[derive(Debug)]
-pub enum Register {
-    // 8-bit registers
+pub enum Reg8 {
     A,
     B,
     C,
@@ -10,27 +7,24 @@ pub enum Register {
     E,
     H,
     L,
+}
 
-    // 16-bit registers
+#[derive(Debug)]
+pub enum Reg16 {
     AF,
     BC,
     DE,
     HL,
     SP,
     PC,
+}
 
-    // Flag registers
+#[derive(Debug)]
+pub enum RegF {
     Fz,
     Fn,
     Fh,
     Fc,
-}
-
-#[derive(Debug)]
-pub enum RegisterValue {
-    Reg8(u8),
-    Reg16(u16),
-    RegFlag(bool),
 }
 
 #[derive(Debug)]
@@ -75,69 +69,89 @@ impl RegisterFile {
     }
 
     /// Register accessors
-    pub fn read_reg(&self, reg: Register) -> RegisterValue {
+    fn read_reg8(&self, reg: Reg8) -> u8 {
         match reg {
-            // 8-bit
-            Register::A => RegisterValue::Reg8(self.reg_a),
-            Register::B => RegisterValue::Reg8(self.reg_b),
-            Register::C => RegisterValue::Reg8(self.reg_c),
-            Register::D => RegisterValue::Reg8(self.reg_d),
-            Register::E => RegisterValue::Reg8(self.reg_e),
-            Register::H => RegisterValue::Reg8(self.reg_h),
-            Register::L => RegisterValue::Reg8(self.reg_l),
-
-            // 16-bit
-            Register::SP => RegisterValue::Reg16(self.reg_sp),
-            Register::PC => RegisterValue::Reg16(self.reg_pc),
-            Register::AF => {
-                let reg_f = ((self.reg_fz as u8) << 7)
-                    | ((self.reg_fn as u8) << 6)
-                    | ((self.reg_fh as u8) << 5)
-                    | ((self.reg_fc as u8) << 4) & 0xF0;
-                RegisterValue::Reg16(u16::from_be_bytes([self.reg_a, reg_f]))
-            }
-            Register::BC => RegisterValue::Reg16(u16::from_be_bytes([self.reg_b, self.reg_c])),
-            Register::DE => RegisterValue::Reg16(u16::from_be_bytes([self.reg_d, self.reg_e])),
-            Register::HL => RegisterValue::Reg16(u16::from_be_bytes([self.reg_h, self.reg_l])),
-
-            // Flags
-            Register::Fz => RegisterValue::RegFlag(self.reg_fz),
-            Register::Fn => RegisterValue::RegFlag(self.reg_fn),
-            Register::Fh => RegisterValue::RegFlag(self.reg_fh),
-            Register::Fc => RegisterValue::RegFlag(self.reg_fc),
+            Reg8::A => self.reg_a,
+            Reg8::B => self.reg_b,
+            Reg8::C => self.reg_c,
+            Reg8::D => self.reg_d,
+            Reg8::E => self.reg_e,
+            Reg8::H => self.reg_h,
+            Reg8::L => self.reg_l,
         }
     }
 
-    pub fn write_reg(&self, reg: Register, val: RegisterValue) -> Result<()> {}
-
-    fn write_reg8(&mut self, reg: Register, val: RegisterValue) -> Result<()> {
-        let RegisterValue::Reg8(val) = val else {
-            return Err("Tried to write {:?} to an 8-bit register".into());
-        };
+    fn write_reg8(&mut self, reg: Reg8, val: u8) {
         match reg {
-            Register::A => self.reg_a = val,
-            Register::B => self.reg_b = val,
-            Register::C => self.reg_c = val,
-            Register::D => self.reg_d = val,
-            Register::E => self.reg_e = val,
-            Register::H => self.reg_h = val,
-            Register::L => self.reg_l = val,
-            _ => return Err(format!("Tried to write {:?} to {:?}", val, reg).into()),
-        };
-        Ok(())
+            Reg8::A => self.reg_a = val,
+            Reg8::B => self.reg_b = val,
+            Reg8::C => self.reg_c = val,
+            Reg8::D => self.reg_d = val,
+            Reg8::E => self.reg_e = val,
+            Reg8::H => self.reg_h = val,
+            Reg8::L => self.reg_l = val,
+        }
     }
 
-    fn write_reg16(&mut self, reg: Register, val: RegisterValue) -> Result<()> {
-        let RegisterValue::Reg16(val) = val else {
-            return Err("Tried to write {:?} to an 8-bit register".into());
-        };
+    fn read_reg16(&self, reg: Reg16) -> u16 {
         match reg {
-            Register::AF => {
-                self.reg_a = (val >> 8) as u8;
-                // TODO: finish the flags and continue here
+            Reg16::AF => {
+                let mut result = (self.reg_a as u16) << 8;
+                if self.reg_fz { result &= 0x80 };
+                if self.reg_fn { result &= 0x40 };
+                if self.reg_fh { result &= 0x20 };
+                if self.reg_fc { result &= 0x10 };
+                result
             },
-            _ => return Err(format!("Tried to write {:?} to {:?}", val, reg).into()),
-        };
-        Ok(())
+            Reg16::BC => ((self.reg_b as u16) << 8) | (self.reg_c as u16),
+            Reg16::DE => ((self.reg_d as u16) << 8) | (self.reg_e as u16),
+            Reg16::HL => ((self.reg_h as u16) << 8) | (self.reg_l as u16),
+            Reg16::SP => self.reg_sp,
+            Reg16::PC => self.reg_pc,
+        }
+    }
+
+    fn write_reg16(&mut self, reg: Reg16, val: u16) {
+        match reg {
+            Reg16::AF => {
+                self.reg_a = (val >> 8) as u8;
+                self.reg_fz = ((val >> 7) & 1) > 0;
+                self.reg_fn = ((val >> 6) & 1) > 0;
+                self.reg_fh = ((val >> 5) & 1) > 0;
+                self.reg_fc = ((val >> 4) & 1) > 0;
+            },
+            Reg16::BC => {
+                self.reg_b = (val >> 8) as u8;
+                self.reg_c = val as u8;
+            },
+            Reg16::DE => {
+                self.reg_d = (val >> 8) as u8;
+                self.reg_e = val as u8;
+            },
+            Reg16::HL => {
+                self.reg_h = (val >> 8) as u8;
+                self.reg_l = val as u8;
+            },
+            Reg16::SP => self.reg_sp = val,
+            Reg16::PC => self.reg_pc = val,
+        }
+    }
+
+    fn read_regf(&mut self, reg: RegF) -> bool {
+        match reg {
+            RegF::Fz => self.reg_fz,
+            RegF::Fn => self.reg_fn,
+            RegF::Fh => self.reg_fh,
+            RegF::Fc => self.reg_fc,
+        }
+    }
+
+    fn write_regf(&mut self, reg: RegF, val: bool) {
+        match reg {
+            RegF::Fz => self.reg_fz = val,
+            RegF::Fn => self.reg_fn = val,
+            RegF::Fh => self.reg_fh = val,
+            RegF::Fc => self.reg_fc = val,
+        }
     }
 }
