@@ -29,6 +29,7 @@ const INC_R16:  InstrMap = InstrMap { mask: 0xCF, value: 0x03, cb: false };
 const INC_R8: InstrMap = InstrMap { mask: 0xC7, value: 0x04, cb: false };
 const DEC_R8: InstrMap = InstrMap { mask: 0xC7, value: 0x05, cb: false };
 const LD_R8_IMM8: InstrMap = InstrMap { mask: 0xC7, value: 0x06, cb: false };
+const JR_IMM8: InstrMap = InstrMap { mask: 0xFF, value: 0x18, cb: false };
 const JR_COND_IMM8: InstrMap = InstrMap { mask: 0xE7, value: 0x20, cb: false };
 
 // Block 1
@@ -140,6 +141,11 @@ impl Instruction {
             let dest = Self::dec_r8(instr, 3);
             let imm8 = cpu.memory.read8(idx + 1);
             Instruction::LdR8Imm8 { dest, imm8 }
+        }
+
+        else if JR_IMM8.check(instr, cb) {
+            let imm8 = cpu.memory.read8(idx + 1);
+            Instruction::JrImm8 { imm8 }
         }
 
         else if JR_COND_IMM8.check(instr, cb) {

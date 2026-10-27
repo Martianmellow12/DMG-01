@@ -13,6 +13,7 @@ pub enum Instruction {
     IncR8 { op: OpReg8 },
     DecR8 { op: OpReg8 },
     LdR8Imm8 { dest: OpReg8, imm8: u8 },
+    JrImm8 { imm8: u8 },
     JrCondImm8 { cond: OpCond, imm8: u8 },
 
     // Block 1
@@ -45,6 +46,7 @@ impl Instruction {
             Self::IncR8 { .. } => 1,
             Self::DecR8 { .. } => 1,
             Self::LdR8Imm8 { .. } => 2,
+            Self::JrImm8 { .. } => 2,
             Self::JrCondImm8 { .. } => 2,
 
             // Block 1
