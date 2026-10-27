@@ -24,8 +24,8 @@ impl Cpu {
         // TODO: debug code, fix this later
         let instr = Instruction::decode(&self).unwrap();
         let mut pc = self.registers.read_reg16(registers::Reg16::PC);
-        println!("PC=0x{:x?} - [{}] {:x?}", pc, instr.size, instr.instr);
-        pc += instr.size as u16;
+        println!("PC=0x{:x?} - [{}] {:x?}", pc, instr.size(), instr);
+        pc += instr.size() as u16;
         self.registers.write_reg16(registers::Reg16::PC, pc);
     }
 }

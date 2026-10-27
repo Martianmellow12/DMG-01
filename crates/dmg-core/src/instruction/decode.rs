@@ -4,12 +4,6 @@ use crate::hardware::registers::{Reg8, Reg16, RegF};
 use super::error::{InstructionError, Result};
 use super::Instruction;
 
-#[derive(Debug)]
-pub struct DecodedInstr {
-    pub instr: Instruction,
-    pub size: usize,
-}
-
 //
 // Instruction definitions
 //
@@ -18,7 +12,6 @@ struct InstrMap {
     mask: u8,
     value: u8,
     cb: bool,
-    size: usize,
 }
 
 impl InstrMap {
@@ -29,28 +22,32 @@ impl InstrMap {
 }
 
 // Block 0
-const LD_R16_IMM16: InstrMap = InstrMap { mask: 0xCF, value: 0x01, cb: false, size: 3 };
-const LD_R16MEM_A: InstrMap = InstrMap { mask: 0xCF, value: 0x02, cb: false, size: 1 };
-const LD_A_R16MEM: InstrMap = InstrMap { mask: 0xCF, value: 0x0A, cb: false, size: 1 };
-const INC_R8: InstrMap = InstrMap { mask: 0xC7, value: 0x04, cb: false, size: 1 };
-const LD_R8_IMM8: InstrMap = InstrMap { mask: 0xC7, value: 0x06, cb: false, size: 2 };
-const JR_COND_IMM8: InstrMap = InstrMap { mask: 0xE7, value: 0x20, cb: false, size: 2 };
+const LD_R16_IMM16: InstrMap = InstrMap { mask: 0xCF, value: 0x01, cb: false };
+const LD_R16MEM_A: InstrMap = InstrMap { mask: 0xCF, value: 0x02, cb: false };
+const LD_A_R16MEM: InstrMap = InstrMap { mask: 0xCF, value: 0x0A, cb: false };
+const INC_R16:  InstrMap = InstrMap { mask: 0xCF, value: 0x03, cb: false };
+const INC_R8: InstrMap = InstrMap { mask: 0xC7, value: 0x04, cb: false };
+const DEC_R8: InstrMap = InstrMap { mask: 0xC7, value: 0x05, cb: false };
+const LD_R8_IMM8: InstrMap = InstrMap { mask: 0xC7, value: 0x06, cb: false };
+const JR_COND_IMM8: InstrMap = InstrMap { mask: 0xE7, value: 0x20, cb: false };
 
 // Block 1
-const LD_R8_R8: InstrMap = InstrMap { mask: 0xC0, value: 0x40, cb: false, size: 1 };
+const LD_R8_R8: InstrMap = InstrMap { mask: 0xC0, value: 0x40, cb: false };
 
 // Block 2
-const XOR_A_R8: InstrMap = InstrMap { mask: 0xF8, value: 0xA8, cb: false, size: 1 };
+const XOR_A_R8: InstrMap = InstrMap { mask: 0xF8, value: 0xA8, cb: false };
 
 // Block 3
-const XOR_A_IMM8: InstrMap = InstrMap { mask: 0xFF, value: 0xEE, cb: false, size: 2 };
-const CALL_IMM16: InstrMap = InstrMap { mask: 0xFF, value: 0xCD, cb: false, size: 3 };
-const LDH_CMEM_A: InstrMap = InstrMap { mask: 0xFF, value: 0xE2, cb: false, size: 1 };
-const LDH_IMM8MEM_A: InstrMap = InstrMap { mask: 0xFF, value: 0xE0, cb: false, size: 2 };
-const LDH_A_IMM8MEM: InstrMap = InstrMap { mask: 0xFF, value: 0xF0, cb: false, size: 2 };
+const XOR_A_IMM8: InstrMap = InstrMap { mask: 0xFF, value: 0xEE, cb: false };
+const CP_A_IMM8: InstrMap = InstrMap { mask: 0xFF, value: 0xFE, cb: false };
+const CALL_IMM16: InstrMap = InstrMap { mask: 0xFF, value: 0xCD, cb: false };
+const LDH_CMEM_A: InstrMap = InstrMap { mask: 0xFF, value: 0xE2, cb: false };
+const LDH_IMM8MEM_A: InstrMap = InstrMap { mask: 0xFF, value: 0xE0, cb: false };
+const LD_IMM16MEM_A: InstrMap = InstrMap { mask: 0xFF, value: 0xEA, cb: false };
+const LDH_A_IMM8MEM: InstrMap = InstrMap { mask: 0xFF, value: 0xF0, cb: false };
 
 // 0xCB prefix
-const BIT_B3_R8: InstrMap = InstrMap { mask: 0xC0, value: 0x40, cb: true, size: 2 };
+const BIT_B3_R8: InstrMap = InstrMap { mask: 0xC0, value: 0x40, cb: true };
 
 //
 // Instruction and operand decoding
@@ -90,7 +87,7 @@ pub enum OpCond {
 pub struct OpBitIdx(u8);
 
 impl Instruction {
-    pub fn decode(cpu: &Cpu) -> Result<DecodedInstr> {
+    pub fn decode(cpu: &Cpu) -> Result<Instruction> {
         let instr;
         let cb;
         let idx; // Points to instr (skips 0xCB)
@@ -108,131 +105,111 @@ impl Instruction {
 
         // Block 0
 
-        if LD_R16_IMM16.check(instr, cb) {
+        Ok(if LD_R16_IMM16.check(instr, cb) {
             let dest = Self::dec_r16(instr, 4);
             let imm16 = cpu.memory.read16(idx + 1)?;
-            return Ok(DecodedInstr {
-                instr: Instruction::LdR16Imm16 { dest, imm16 },
-                size: LD_R16_IMM16.size
-            });
+            Instruction::LdR16Imm16 { dest, imm16 }
         }
 
-        if LD_R16MEM_A.check(instr, cb) {
+        else if LD_R16MEM_A.check(instr, cb) {
             let dest = Self::dec_r16mem(instr, 4);
-            return Ok(DecodedInstr {
-                instr: Instruction::LdR16MemA { dest },
-                size: LD_R16MEM_A.size
-            });
+            Instruction::LdR16MemA { dest }
         }
 
-        if LD_A_R16MEM.check(instr, cb) {
+        else if LD_A_R16MEM.check(instr, cb) {
             let src = Self::dec_r16mem(instr, 4);
-            return Ok(DecodedInstr {
-                instr: Instruction::LdAR16Mem { src },
-                size: LD_A_R16MEM.size
-            });
+            Instruction::LdAR16Mem { src }
         }
 
-        if INC_R8.check(instr, cb) {
+        else if INC_R16.check(instr, cb) {
+            let op = Self::dec_r16(instr, 4);
+            Instruction::IncR16 { op }
+        }
+
+        else if INC_R8.check(instr, cb) {
             let op = Self::dec_r8(instr, 3);
-            return Ok(DecodedInstr {
-                instr: Instruction::IncR8 { op },
-                size: INC_R8.size
-            });
+            Instruction::IncR8 { op }
         }
 
-        if LD_R8_IMM8.check(instr, cb) {
+        else if DEC_R8.check(instr, cb) {
+            let op = Self::dec_r8(instr, 3);
+            Instruction::DecR8 { op }
+        }
+
+        else if LD_R8_IMM8.check(instr, cb) {
             let dest = Self::dec_r8(instr, 3);
             let imm8 = cpu.memory.read8(idx + 1);
-            return Ok(DecodedInstr {
-                instr: Instruction::LdR8Imm8 { dest, imm8 },
-                size: LD_R8_IMM8.size
-            });
+            Instruction::LdR8Imm8 { dest, imm8 }
         }
 
-        if JR_COND_IMM8.check(instr, cb) {
+        else if JR_COND_IMM8.check(instr, cb) {
             let cond = Self::dec_cond(instr, 3);
             let imm8 = cpu.memory.read8(idx + 1);
-            return Ok(DecodedInstr {
-                instr: Instruction::JrCondImm8 { cond, imm8 },
-                size: JR_COND_IMM8.size
-            });
+            Instruction::JrCondImm8 { cond, imm8 }
         }
 
         // Block 1
 
-        if LD_R8_R8.check(instr, cb) {
+        else if LD_R8_R8.check(instr, cb) {
             let dest = Self::dec_r8(instr, 3);
             let src = Self::dec_r8(instr, 0);
-            return Ok(DecodedInstr {
-                instr: Instruction::LdR8R8 { dest, src },
-                size: LD_R8_R8.size
-            });
+            Instruction::LdR8R8 { dest, src }
         }
 
         // Block 2
 
-        if XOR_A_R8.check(instr, cb) {
+        else if XOR_A_R8.check(instr, cb) {
             let op = Self::dec_r8(instr, 0);
-            return Ok(DecodedInstr {
-                instr: Instruction::XorAR8 { op },
-                size: XOR_A_R8.size
-            });
+            Instruction::XorAR8 { op }
         }
 
         // Block 3
 
-        if XOR_A_IMM8.check(instr, cb) {
+        else if XOR_A_IMM8.check(instr, cb) {
             let imm8 = cpu.memory.read8(idx + 1);
-            return Ok(DecodedInstr {
-                instr: Instruction::XorAImm8 { imm8 },
-                size: XOR_A_IMM8.size
-            });
+            Instruction::XorAImm8 { imm8 }
         }
 
-        if CALL_IMM16.check(instr, cb) {
+        else if CP_A_IMM8.check(instr, cb) {
+            let imm8 = cpu.memory.read8(idx + 1);
+            Instruction::CpAImm8 { imm8 }
+        }
+
+        else if CALL_IMM16.check(instr, cb) {
             let imm16 = cpu.memory.read16(idx + 1)?;
-            return Ok(DecodedInstr {
-                instr: Instruction::CallImm16 { imm16 },
-                size: CALL_IMM16.size
-            });
+            Instruction::CallImm16 { imm16 }
         }
 
-        if LDH_CMEM_A.check(instr, cb) {
-            return Ok(DecodedInstr {
-                instr: Instruction::LdhCmemA,
-                size: LDH_CMEM_A.size
-            });
+        else if LDH_CMEM_A.check(instr, cb) {
+            Instruction::LdhCmemA
         }
 
-        if LDH_IMM8MEM_A.check(instr, cb) {
+        else if LDH_IMM8MEM_A.check(instr, cb) {
             let imm8 = cpu.memory.read8(idx + 1);
-            return Ok(DecodedInstr {
-                instr: Instruction::LdhImm8MemA { imm8 },
-                size: LDH_A_IMM8MEM.size
-            });
+            Instruction::LdhImm8MemA { imm8 }
         }
 
-        if LDH_A_IMM8MEM.check(instr, cb) {
+        else if LD_IMM16MEM_A.check(instr, cb) {
+            let imm16 = cpu.memory.read16(idx + 1)?;
+            Instruction::LdImm16MemA { imm16 }
+        }
+
+        else if LDH_A_IMM8MEM.check(instr, cb) {
             let imm8 = cpu.memory.read8(idx + 1);
-            return Ok(DecodedInstr {
-                instr: Instruction::LdhAImm8Mem { imm8 },
-                size: LDH_A_IMM8MEM.size
-            });
+            Instruction::LdhAImm8Mem { imm8 }
         }
 
         // 0xCB prefix
 
-        if BIT_B3_R8.check(instr, cb) {
+        else if BIT_B3_R8.check(instr, cb) {
             let bit_idx = Self::dec_b3(instr, 3);
             let op = Self::dec_r8(instr, 0);
-            return Ok(DecodedInstr {
-                instr: Instruction::BitB3R8 { bit_idx, op },
-                size: BIT_B3_R8.size
-            });
+            Instruction::BitB3R8 { bit_idx, op }
         }
 
-        Err(InstructionError::UnknownInstruction { instr, cb })
+        else {
+            return Err(InstructionError::UnknownInstruction { instr, cb })
+        })
     }
 
     // Decode helper functions
