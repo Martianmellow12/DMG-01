@@ -192,3 +192,18 @@ impl RegisterFile {
         self.reg_fc = c;
     }
 }
+
+impl std::fmt::Display for RegisterFile {
+    fn fmt(
+        &self, f: &mut std::fmt::Formatter<'_>
+    ) -> std::result::Result<(), std::fmt::Error> {
+        
+        
+        write!(f, "SP=0x{:04x}  PC=0x{:04x}\n", self.reg_sp, self.reg_pc)?;
+        write!(f, "AF=0x{:04x}  A=0x{:02x}\n", self.read_reg16(Reg16::AF), self.reg_a)?;
+        // TODO: continue here
+        write!(f, "")
+
+        Ok(())
+    }
+}

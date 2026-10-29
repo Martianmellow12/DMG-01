@@ -32,6 +32,7 @@ impl Cpu {
     pub fn dump_state(&self) {
         println!("Registers");
         println!("=================");
-        println!("{:#x?}", self.registers);
+        println!("{}", self.registers);
+        println!()
     }
 }

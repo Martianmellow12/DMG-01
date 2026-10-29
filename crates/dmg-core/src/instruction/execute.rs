@@ -21,8 +21,10 @@ impl Instruction {
                 cpu.registers.write_reg16(reg, *imm16);
             },
             Self::LdR16MemA { dest } => {
-                
-            }
+                let a_val = cpu.registers.read_reg8(Reg8::A);
+                let addr = dest.read_addr(cpu);
+                cpu.memory.write8(addr, a_val);
+            },
 
             // Block 2
             Self::XorAR8 { op } => {

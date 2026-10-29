@@ -44,8 +44,23 @@ pub enum OpReg16Mem {
 }
 
 impl OpReg16Mem {
-    // TODO: continue here
-    pub fn read(&self, cpu: &Cpu) -> 
+    pub fn read_addr(&self, cpu: &mut Cpu) -> u16 {
+        let reg = match self {
+            Self::RegBC => Reg16::BC,
+            Self::RegDE => Reg16::DE,
+            Self::RegIncHL | Self::RegDecHL => Reg16::HL,
+        };
+        let addr = cpu.registers.read_reg16(reg);
+        
+        // Update HL after it's read
+        match self {
+            Self::RegIncHL => cpu.registers.write_reg16(Reg16::HL, addr + 1),
+            Self::RegDecHL => cpu.registers.write_reg16(Reg16::HL, addr - 1),
+            _ => {},
+        };
+
+        addr
+    }
 }
 
 #[derive(Debug)]
