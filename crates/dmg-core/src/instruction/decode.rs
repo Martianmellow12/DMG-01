@@ -4,6 +4,8 @@ use crate::hardware::registers::{Reg8, Reg16, RegF};
 use super::error::{InstructionError, Result};
 use super::Instruction;
 
+use super::{OpReg8, OpReg16, OpReg16Stk, OpReg16Mem, OpCond, OpBitIdx};
+
 //
 // Instruction definitions
 //
@@ -61,47 +63,6 @@ const BIT_B3_R8: InstrMap = InstrMap { mask: 0xC0, value: 0x40, cb: true };
 //
 // Instruction and operand decoding
 //
-
-#[derive(Debug)]
-pub enum OpReg8 {
-    Reg(Reg8),
-    IndirectHL,
-}
-
-#[derive(Debug)]
-pub enum OpReg16 {
-    RegBC,
-    RegDE,
-    RegHL,
-    RegSP,
-}
-
-#[derive(Debug)]
-pub enum OpReg16Stk {
-    RegBC,
-    RegDE,
-    RegHL,
-    RegAF,
-}
-
-#[derive(Debug)]
-pub enum OpReg16Mem {
-    RegBC,
-    RegDE,
-    RegIncHL,
-    RegDecHL,
-}
-
-#[derive(Debug)]
-pub enum OpCond {
-    CondNZ,
-    CondZ,
-    CondNC,
-    CondC,
-}
-
-#[derive(Debug)]
-pub struct OpBitIdx(u8);
 
 impl Instruction {
     pub fn decode(cpu: &Cpu) -> Result<Instruction> {

@@ -1,4 +1,8 @@
-#[derive(Debug)]
+use crate::instruction::operands;
+
+use super::error::{HardwareError, Result};
+
+#[derive(Debug, Copy, Clone)]
 pub enum Reg8 {
     A,
     B,
@@ -9,7 +13,22 @@ pub enum Reg8 {
     L,
 }
 
-#[derive(Debug)]
+impl TryFrom<&operands::OpReg8> for Reg8 {
+    type Error = HardwareError;
+
+    fn try_from(value: &operands::OpReg8) -> Result<Self> {
+        match value {
+            operands::OpReg8::Reg(reg) => Ok(*reg),
+            operands::OpReg8::IndirectHL => {
+                Err(HardwareError::ConversionError(
+                    "Cannot convert an [hl] R8 to a Reg8"
+                ))
+            },
+        }
+    }
+}
+
+#[derive(Debug, Copy, Clone)]
 pub enum Reg16 {
     AF,
     BC,
@@ -19,7 +38,18 @@ pub enum Reg16 {
     PC,
 }
 
-#[derive(Debug)]
+impl From<&operands::OpReg16> for Reg16 {
+    fn from(value: &operands::OpReg16) -> Self {
+        match value {
+            operands::OpReg16::RegBC => Self::BC,
+            operands::OpReg16::RegDE => Self::DE,
+            operands::OpReg16::RegHL => Self::HL,
+            operands::OpReg16::RegSP => Self::SP,
+        }
+    }
+}
+
+#[derive(Debug, Copy, Clone)]
 pub enum RegF {
     Fz,
     Fn,
@@ -153,5 +183,12 @@ impl RegisterFile {
             RegF::Fh => self.reg_fh = val,
             RegF::Fc => self.reg_fc = val,
         }
+    }
+
+    pub fn write_flags(&mut self, z: bool, n: bool, h: bool, c: bool) {
+        self.reg_fz = z;
+        self.reg_fn = n;
+        self.reg_fh = h;
+        self.reg_fc = c;
     }
 }

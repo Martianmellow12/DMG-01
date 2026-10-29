@@ -1,8 +1,11 @@
 use std::fmt::{Display, Formatter};
 
+pub type Result<T> = std::result::Result<T, HardwareError>;
+
 #[derive(Debug)]
 pub enum HardwareError {
     OutOfBoundsAccess(&'static str),
+    ConversionError(&'static str),
     IoError(std::io::Error),
 }
 

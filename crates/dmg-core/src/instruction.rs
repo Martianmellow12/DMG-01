@@ -1,7 +1,9 @@
-mod decode;
-mod error;
+pub mod operands;
+pub mod decode;
+pub mod execute;
+pub mod error;
 
-use decode::{OpReg8, OpReg16, OpReg16Stk, OpReg16Mem, OpCond, OpBitIdx};
+use operands::{OpReg8, OpReg16, OpReg16Stk, OpReg16Mem, OpCond, OpBitIdx};
 
 #[derive(Debug)]
 pub enum Instruction {
@@ -82,6 +84,20 @@ impl Instruction {
             // 0xCB prefix
             Self::RlR8 { .. } => 2,
             Self::BitB3R8 { .. } => 2,
+        }
+    }
+
+    // TODO: make this const once it's fully implemented
+    pub fn cycles(&self) -> u8 {
+        match self {
+            // Block 0
+            Self::LdR16Imm16 { .. } => 3,
+            Self::LdR16MemA { .. } => 2,
+
+            // Block 2
+            Self::XorAR8 { .. } => 1,
+            
+            _ => todo!("Cyle count not specified for this instruction"),
         }
     }
 }

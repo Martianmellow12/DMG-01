@@ -22,10 +22,16 @@ impl Cpu {
 
     pub fn step(&mut self) -> () {
         // TODO: debug code, fix this later
-        let instr = Instruction::decode(&self).unwrap();
+        let instr = Instruction::decode(self).unwrap();
         let mut pc = self.registers.read_reg16(registers::Reg16::PC);
         println!("PC=0x{:x?} - [{}] {:x?}", pc, instr.size(), instr);
-        pc += instr.size() as u16;
-        self.registers.write_reg16(registers::Reg16::PC, pc);
+        instr.execute(self);
+    }
+
+    // Debug functions
+    pub fn dump_state(&self) {
+        println!("Registers");
+        println!("=================");
+        println!("{:#x?}", self.registers);
     }
 }
