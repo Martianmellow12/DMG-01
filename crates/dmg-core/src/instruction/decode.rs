@@ -29,6 +29,7 @@ const INC_R16:  InstrMap = InstrMap { mask: 0xCF, value: 0x03, cb: false };
 const INC_R8: InstrMap = InstrMap { mask: 0xC7, value: 0x04, cb: false };
 const DEC_R8: InstrMap = InstrMap { mask: 0xC7, value: 0x05, cb: false };
 const LD_R8_IMM8: InstrMap = InstrMap { mask: 0xC7, value: 0x06, cb: false };
+const RLA: InstrMap = InstrMap { mask: 0xFF, value: 0x17, cb: false };
 const JR_IMM8: InstrMap = InstrMap { mask: 0xFF, value: 0x18, cb: false };
 const JR_COND_IMM8: InstrMap = InstrMap { mask: 0xE7, value: 0x20, cb: false };
 
@@ -36,18 +37,25 @@ const JR_COND_IMM8: InstrMap = InstrMap { mask: 0xE7, value: 0x20, cb: false };
 const LD_R8_R8: InstrMap = InstrMap { mask: 0xC0, value: 0x40, cb: false };
 
 // Block 2
+const ADD_A_R8: InstrMap = InstrMap { mask: 0xF8, value: 0x80, cb: false };
+const SUB_A_R8: InstrMap = InstrMap { mask: 0xF8, value: 0x90, cb: false };
 const XOR_A_R8: InstrMap = InstrMap { mask: 0xF8, value: 0xA8, cb: false };
+const CP_A_R8: InstrMap = InstrMap { mask: 0xF8, value: 0xB8, cb: false };
 
 // Block 3
 const XOR_A_IMM8: InstrMap = InstrMap { mask: 0xFF, value: 0xEE, cb: false };
 const CP_A_IMM8: InstrMap = InstrMap { mask: 0xFF, value: 0xFE, cb: false };
+const RET: InstrMap = InstrMap { mask: 0xFF, value: 0xC9, cb: false };
 const CALL_IMM16: InstrMap = InstrMap { mask: 0xFF, value: 0xCD, cb: false };
+const POP_R16STK: InstrMap = InstrMap { mask: 0xCF, value: 0xC1, cb: false };
+const PUSH_R16STK: InstrMap = InstrMap { mask: 0xCF, value: 0xC5, cb: false };
 const LDH_CMEM_A: InstrMap = InstrMap { mask: 0xFF, value: 0xE2, cb: false };
 const LDH_IMM8MEM_A: InstrMap = InstrMap { mask: 0xFF, value: 0xE0, cb: false };
 const LD_IMM16MEM_A: InstrMap = InstrMap { mask: 0xFF, value: 0xEA, cb: false };
 const LDH_A_IMM8MEM: InstrMap = InstrMap { mask: 0xFF, value: 0xF0, cb: false };
 
 // 0xCB prefix
+const RL_R8: InstrMap = InstrMap { mask: 0xF8, value: 0x10, cb: true };
 const BIT_B3_R8: InstrMap = InstrMap { mask: 0xC0, value: 0x40, cb: true };
 
 //
@@ -66,6 +74,14 @@ pub enum OpReg16 {
     RegDE,
     RegHL,
     RegSP,
+}
+
+#[derive(Debug)]
+pub enum OpReg16Stk {
+    RegBC,
+    RegDE,
+    RegHL,
+    RegAF,
 }
 
 #[derive(Debug)]
@@ -143,6 +159,10 @@ impl Instruction {
             Instruction::LdR8Imm8 { dest, imm8 }
         }
 
+        else if RLA.check(instr, cb) {
+            Instruction::Rla
+        }
+
         else if JR_IMM8.check(instr, cb) {
             let imm8 = cpu.memory.read8(idx + 1);
             Instruction::JrImm8 { imm8 }
@@ -164,9 +184,24 @@ impl Instruction {
 
         // Block 2
 
+        else if ADD_A_R8.check(instr, cb) {
+            let op = Self::dec_r8(instr, 0);
+            Instruction::AddAR8 { op }
+        }
+
+        else if SUB_A_R8.check(instr, cb) {
+            let op = Self::dec_r8(instr, 0);
+            Instruction::SubAR8 { op }
+        }
+
         else if XOR_A_R8.check(instr, cb) {
             let op = Self::dec_r8(instr, 0);
             Instruction::XorAR8 { op }
+        }
+
+        else if CP_A_R8.check(instr, cb) {
+            let op = Self::dec_r8(instr, 0);
+            Instruction::CpAR8 { op }
         }
 
         // Block 3
@@ -181,9 +216,23 @@ impl Instruction {
             Instruction::CpAImm8 { imm8 }
         }
 
+        else if RET.check(instr, cb) {
+            Instruction::Ret
+        }
+
         else if CALL_IMM16.check(instr, cb) {
             let imm16 = cpu.memory.read16(idx + 1)?;
             Instruction::CallImm16 { imm16 }
+        }
+
+        else if POP_R16STK.check(instr, cb) {
+            let reg = Self::dec_r16stk(instr, 4);
+            Instruction::PopR16Stk { reg }
+        }
+
+        else if PUSH_R16STK.check(instr, cb) {
+            let reg = Self::dec_r16stk(instr, 4);
+            Instruction::PushR16Stk { reg }
         }
 
         else if LDH_CMEM_A.check(instr, cb) {
@@ -206,6 +255,11 @@ impl Instruction {
         }
 
         // 0xCB prefix
+
+        else if RL_R8.check(instr, cb) {
+            let op = Self::dec_r8(instr, 0);
+            Instruction::RlR8 { op }
+        }
 
         else if BIT_B3_R8.check(instr, cb) {
             let bit_idx = Self::dec_b3(instr, 3);
@@ -246,14 +300,14 @@ impl Instruction {
         }
     }
 
-    fn dec_cond(instr: u8, shift: usize) -> OpCond {
+    fn dec_r16stk(instr: u8, shift: usize) -> OpReg16Stk {
         let code = (instr >> shift) & 0x3;
         match code {
-            0 => OpCond::CondNZ,
-            1 => OpCond::CondZ,
-            2 => OpCond::CondNC,
-            3 => OpCond::CondC,
-            _ => panic!("dec_cond values > 3 are unreachable"),
+            0 => OpReg16Stk::RegBC,
+            1 => OpReg16Stk::RegDE,
+            2 => OpReg16Stk::RegHL,
+            3 => OpReg16Stk::RegAF,
+            _ => panic!("dec_r16stk values > 3 are unreachable"),
         }
     }
 
@@ -265,6 +319,17 @@ impl Instruction {
             2 => OpReg16Mem::RegIncHL,
             3 => OpReg16Mem::RegDecHL,
             _ => panic!("dec_r16mem values > 3 are unreachable"),
+        }
+    }
+
+    fn dec_cond(instr: u8, shift: usize) -> OpCond {
+        let code = (instr >> shift) & 0x3;
+        match code {
+            0 => OpCond::CondNZ,
+            1 => OpCond::CondZ,
+            2 => OpCond::CondNC,
+            3 => OpCond::CondC,
+            _ => panic!("dec_cond values > 3 are unreachable"),
         }
     }
 

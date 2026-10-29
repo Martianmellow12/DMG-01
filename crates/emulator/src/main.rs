@@ -10,6 +10,15 @@ fn run_emulator() -> Result<(), Box<dyn std::error::Error>> {
     println!("Beginning execution...");
     loop {
         cpu.step();
+
+        // Step over the video data
+        if cpu.registers.read_reg16(hardware::registers::Reg16::PC) == 0xA8 {
+            println!("SKIPPED VIDEO DATA");
+            cpu.registers.write_reg16(
+                hardware::registers::Reg16::PC,
+                0xE0
+            );
+        }
     }
 }
 
