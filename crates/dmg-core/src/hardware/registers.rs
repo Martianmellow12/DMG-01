@@ -167,7 +167,7 @@ impl RegisterFile {
         }
     }
 
-    pub fn read_regf(&mut self, reg: RegF) -> bool {
+    pub fn read_regf(&self, reg: RegF) -> bool {
         match reg {
             RegF::Fz => self.reg_fz,
             RegF::Fn => self.reg_fn,
@@ -185,11 +185,23 @@ impl RegisterFile {
         }
     }
 
-    pub fn write_flags(&mut self, z: bool, n: bool, h: bool, c: bool) {
-        self.reg_fz = z;
-        self.reg_fn = n;
-        self.reg_fh = h;
-        self.reg_fc = c;
+    // Convenience functions
+
+    pub fn calc_offset_pc(&self, offset: i8) -> u16 {
+        self.reg_pc.wrapping_add(offset as u16)
+    }
+
+    pub fn write_flags(
+        &mut self,
+        z: Option<bool>,
+        n: Option<bool>,
+        h: Option<bool>,
+        c: Option<bool>
+    ) {
+        if let Some(z) = z { self.reg_fz = z }
+        if let Some(n) = n { self.reg_fn = n }
+        if let Some(h) = h { self.reg_fh = h }
+        if let Some(c) = c { self.reg_fc = c }
     }
 }
 
@@ -197,13 +209,39 @@ impl std::fmt::Display for RegisterFile {
     fn fmt(
         &self, f: &mut std::fmt::Formatter<'_>
     ) -> std::result::Result<(), std::fmt::Error> {
-        
-        
+        let bit_fz = if self.reg_fz { 1 } else { 0 };
+        let bit_fn = if self.reg_fn { 1 } else { 0 };
+        let bit_fh = if self.reg_fh { 1 } else { 0 };
+        let bit_fc = if self.reg_fc { 1 } else { 0 };
+
         write!(f, "SP=0x{:04x}  PC=0x{:04x}\n", self.reg_sp, self.reg_pc)?;
         write!(f, "AF=0x{:04x}  A=0x{:02x}\n", self.read_reg16(Reg16::AF), self.reg_a)?;
-        // TODO: continue here
-        write!(f, "")
-
+        write!(f,
+            "BC=0x{:04x}  B=0x{:02x}  C=0x{:02x}\n",
+            self.read_reg16(Reg16::BC),
+            self.reg_b,
+            self.reg_c,
+        )?;
+        write!(f,
+            "DE=0x{:04x}  D=0x{:02x}  E=0x{:02x}\n",
+            self.read_reg16(Reg16::DE),
+            self.reg_d,
+            self.reg_e,
+        )?;
+        write!(f,
+            "HL=0x{:04x}  H=0x{:02x}  L=0x{:02x}\n",
+            self.read_reg16(Reg16::HL),
+            self.reg_h,
+            self.reg_l,
+        )?;
+        write!(f,
+            "Flags: z={} n={} h={} c={}\n",
+            bit_fz,
+            bit_fn,
+            bit_fh,
+            bit_fc,
+        )?;
+        
         Ok(())
     }
 }

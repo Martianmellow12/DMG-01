@@ -86,18 +86,4 @@ impl Instruction {
             Self::BitB3R8 { .. } => 2,
         }
     }
-
-    // TODO: make this const once it's fully implemented
-    pub fn cycles(&self) -> u8 {
-        match self {
-            // Block 0
-            Self::LdR16Imm16 { .. } => 3,
-            Self::LdR16MemA { .. } => 2,
-
-            // Block 2
-            Self::XorAR8 { .. } => 1,
-            
-            _ => todo!("Cyle count not specified for this instruction"),
-        }
-    }
 }

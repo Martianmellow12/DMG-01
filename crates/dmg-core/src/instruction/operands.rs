@@ -71,5 +71,22 @@ pub enum OpCond {
     CondC,
 }
 
+impl OpCond {
+    pub fn check(&self, cpu: &Cpu) -> bool {
+        match self {
+            Self::CondNZ => cpu.registers.read_regf(RegF::Fz) == false,
+            Self::CondZ => cpu.registers.read_regf(RegF::Fz) == true,
+            Self::CondNC => cpu.registers.read_regf(RegF::Fc) == false,
+            Self::CondC => cpu.registers.read_regf(RegF::Fc) == true,
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct OpBitIdx(pub u8);
+
+impl OpBitIdx {
+    pub fn mask(&self) -> u8 {
+        1 << self.0
+    }
+}
