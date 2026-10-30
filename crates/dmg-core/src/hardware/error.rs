@@ -1,6 +1,6 @@
 use std::fmt::{Display, Formatter};
 
-pub type Result<T> = std::result::Result<T, HardwareError>;
+pub type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 
 #[derive(Debug)]
 pub enum HardwareError {
@@ -14,11 +14,5 @@ impl std::error::Error for HardwareError {}
 impl Display for HardwareError {
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         write!(f, "Hardware Error: {:?}", self)
-    }
-}
-
-impl From<std::io::Error> for HardwareError {
-    fn from(err: std::io::Error) -> Self {
-        HardwareError::IoError(err)
     }
 }

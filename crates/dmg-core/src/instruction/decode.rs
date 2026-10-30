@@ -229,7 +229,7 @@ impl Instruction {
         }
 
         else {
-            return Err(InstructionError::UnknownInstruction { instr, cb })
+            return Err(InstructionError::UnknownInstruction { instr, cb }.into())
         })
     }
 

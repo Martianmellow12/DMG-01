@@ -14,7 +14,7 @@ pub enum Reg8 {
 }
 
 impl TryFrom<&operands::OpReg8> for Reg8 {
-    type Error = HardwareError;
+    type Error = Box<dyn std::error::Error>;
 
     fn try_from(value: &operands::OpReg8) -> Result<Self> {
         match value {
@@ -22,7 +22,7 @@ impl TryFrom<&operands::OpReg8> for Reg8 {
             operands::OpReg8::IndirectHL => {
                 Err(HardwareError::ConversionError(
                     "Cannot convert an [hl] R8 to a Reg8"
-                ))
+                ).into())
             },
         }
     }
@@ -127,10 +127,10 @@ impl RegisterFile {
         match reg {
             Reg16::AF => {
                 let mut result = (self.reg_a as u16) << 8;
-                if self.reg_fz { result &= 0x80 };
-                if self.reg_fn { result &= 0x40 };
-                if self.reg_fh { result &= 0x20 };
-                if self.reg_fc { result &= 0x10 };
+                if self.reg_fz { result &= 0xFF80 };
+                if self.reg_fn { result &= 0xFF40 };
+                if self.reg_fh { result &= 0xFF20 };
+                if self.reg_fc { result &= 0xFF10 };
                 result
             },
             Reg16::BC => ((self.reg_b as u16) << 8) | (self.reg_c as u16),
@@ -202,6 +202,14 @@ impl RegisterFile {
         if let Some(n) = n { self.reg_fn = n }
         if let Some(h) = h { self.reg_fh = h }
         if let Some(c) = c { self.reg_fc = c }
+    }
+
+    pub fn set_flag(&mut self, reg: RegF) {
+        self.write_regf(reg, true);
+    }
+
+    pub fn clear_flag(&mut self, reg: RegF) {
+        self.write_regf(reg, false);
     }
 }
 

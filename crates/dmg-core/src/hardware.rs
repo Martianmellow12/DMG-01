@@ -4,7 +4,7 @@ pub mod error;
 
 use super::instruction::Instruction;
 
-use error::HardwareError;
+use error::Result;
 use registers::{RegisterFile};
 
 pub struct Cpu {
@@ -13,19 +13,20 @@ pub struct Cpu {
 }
 
 impl Cpu {
-    pub fn new() -> Self {
+    pub fn new(en_log: bool) -> Self {
         Self {
             registers: RegisterFile::new(),
-            memory: memory::Memory::new(),
+            memory: memory::Memory::new(en_log),
         }
     }
 
-    pub fn step(&mut self) -> () {
+    pub fn step(&mut self) -> Result<()> {
         // TODO: debug code, fix this later
         let instr = Instruction::decode(self).unwrap();
-        let mut pc = self.registers.read_reg16(registers::Reg16::PC);
+        let pc = self.registers.read_reg16(registers::Reg16::PC);
         println!("PC=0x{:x?} - [{}] {:x?}", pc, instr.size(), instr);
-        instr.execute(self);
+        instr.execute(self)?;
+        Ok(())
     }
 
     // Debug functions
@@ -33,6 +34,5 @@ impl Cpu {
         println!("Registers");
         println!("=================");
         println!("{}", self.registers);
-        println!()
     }
 }

@@ -17,6 +17,23 @@ impl OpReg8 {
             },
         }
     }
+
+    pub fn write(&self, cpu: &mut Cpu, val: u8) {
+        match self {
+            Self::Reg(reg) => cpu.registers.write_reg8(*reg, val),
+            Self::IndirectHL => {
+                let addr = cpu.registers.read_reg16(Reg16::HL);
+                cpu.memory.write8(addr, val);
+            },
+        }
+    }
+
+    pub fn is_indirect(&self) -> bool {
+        match self {
+            Self::IndirectHL => true,
+            _ => false,
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -44,7 +61,7 @@ pub enum OpReg16Mem {
 }
 
 impl OpReg16Mem {
-    pub fn read_addr(&self, cpu: &mut Cpu) -> u16 {
+    pub fn to_addr(&self, cpu: &mut Cpu) -> u16 {
         let reg = match self {
             Self::RegBC => Reg16::BC,
             Self::RegDE => Reg16::DE,

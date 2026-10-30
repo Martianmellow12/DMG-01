@@ -1,42 +1,60 @@
+use std::collections::VecDeque;
+use std::cell::RefCell;
+
 use super::error::{HardwareError, Result};
 
 pub struct Memory {
     raw_ram: [u8; 0xFFFF],
+    log: Option<RefCell<VecDeque<String>>>,
 }
 
 impl Memory {
-    pub fn new() -> Self {
+    pub fn new(en_log: bool) -> Self {
+        let log = if en_log {
+            Some(RefCell::new(VecDeque::new()))
+        } else {
+            None
+        };
         Self {
             raw_ram: [0; 0xFFFF],
+            log,
         }
     }
 
     // Raw accessors
     pub fn read8(&self, addr: u16) -> u8 {
-        self.raw_ram[addr as usize]
+        let result = self.raw_ram[addr as usize];
+        self.add_log(format!("READ8 [{:04x}] -> {:02x}", addr, result));
+        result
     }
 
     pub fn write8(&mut self, addr: u16, val: u8) {
+        self.add_log(format!("WRITE8 [{:04x}] <- {:02x}", addr, val));
         self.raw_ram[addr as usize] = val;
     }
 
     pub fn read16(&self, addr: u16) -> Result<u16> {
         if addr < 0xFFFF {
-            Ok(((self.read8(addr + 1) as u16) << 8) | (self.read8(addr) as u16))
+            let addr = addr as usize;
+            let bh = self.raw_ram[addr + 1];
+            let bl = self.raw_ram[addr];
+            let result = ((bh as u16) << 8) | (bl as u16);
+            self.add_log(format!("READ16 [{:04x}] -> {:04x}", addr, result));
+            Ok(result)
         } else {
-            Err(HardwareError::OutOfBoundsAccess("read16"))
+            Err(HardwareError::OutOfBoundsAccess("read16").into())
         }
     }
 
     pub fn write16(&mut self, addr: u16, val: u16) -> Result<()> {
+        self.add_log(format!("WRITE16 [{:04x}] <- {:04x}", addr, val));
         if addr < 0xFFFF {
-            let bh = (val >> 8) as u8;
-            let bl = val as u8;
-            self.write8(addr, bl);
-            self.write8(addr + 1, bh);
+            let addr = addr as usize;
+            self.raw_ram[addr + 1] = (val >> 8) as u8;
+            self.raw_ram[addr] = val as u8;
             Ok(())
         } else {
-            Err(HardwareError::OutOfBoundsAccess("write16"))
+            Err(HardwareError::OutOfBoundsAccess("write16").into())
         }
     }
 
@@ -45,12 +63,29 @@ impl Memory {
         let start_addr = start_addr as usize;
         let bytes = std::fs::read(file)?;
         if (start_addr + bytes.len() - 1) > 0xFFFF {
-            Err(HardwareError::OutOfBoundsAccess("load_file"))
+            Err(HardwareError::OutOfBoundsAccess("load_file").into())
         } else {
             for (idx, byte) in bytes.into_iter().enumerate() {
                 self.raw_ram[start_addr + idx] = byte;
             }
             Ok(())
+        }
+    }
+
+    // Log management
+    pub fn drain_log(&self) {
+        if let Some(log) = &self.log {
+            let mut log = log.borrow_mut();
+            while let Some(msg) = log.pop_front() {
+                println!("{}", msg);
+            }
+        }
+    }
+    
+    fn add_log(&self, msg: String) {
+        if let Some(log) = &self.log {
+            let mut log = log.borrow_mut();
+            log.push_back(msg);
         }
     }
 }
