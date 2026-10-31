@@ -4,7 +4,7 @@ use std::cell::RefCell;
 use super::error::{HardwareError, Result};
 
 pub struct Memory {
-    raw_ram: [u8; 0xFFFF],
+    raw_ram: [u8; 0x10000],
     log: Option<RefCell<VecDeque<String>>>,
 }
 
@@ -16,7 +16,7 @@ impl Memory {
             None
         };
         Self {
-            raw_ram: [0; 0xFFFF],
+            raw_ram: [0; 0x10000],
             log,
         }
     }
@@ -33,29 +33,18 @@ impl Memory {
         self.raw_ram[addr as usize] = val;
     }
 
-    pub fn read16(&self, addr: u16) -> Result<u16> {
-        if addr < 0xFFFF {
-            let addr = addr as usize;
-            let bh = self.raw_ram[addr + 1];
-            let bl = self.raw_ram[addr];
-            let result = ((bh as u16) << 8) | (bl as u16);
-            self.add_log(format!("READ16 [{:04x}] -> {:04x}", addr, result));
-            Ok(result)
-        } else {
-            Err(HardwareError::OutOfBoundsAccess("read16").into())
-        }
+    pub fn read16(&self, addr: u16) -> u16 {
+        let bh = self.raw_ram[addr.wrapping_add(1) as usize];
+        let bl = self.raw_ram[addr as usize];
+        let result = ((bh as u16) << 8) | (bl as u16);
+        self.add_log(format!("READ16 [{:04x}] -> {:04x}", addr, result));
+        result
     }
 
-    pub fn write16(&mut self, addr: u16, val: u16) -> Result<()> {
+    pub fn write16(&mut self, addr: u16, val: u16) {
         self.add_log(format!("WRITE16 [{:04x}] <- {:04x}", addr, val));
-        if addr < 0xFFFF {
-            let addr = addr as usize;
-            self.raw_ram[addr + 1] = (val >> 8) as u8;
-            self.raw_ram[addr] = val as u8;
-            Ok(())
-        } else {
-            Err(HardwareError::OutOfBoundsAccess("write16").into())
-        }
+        self.raw_ram[addr.wrapping_add(1) as usize] = (val >> 8) as u8;
+        self.raw_ram[addr as usize] = val as u8;
     }
 
     // File loading

@@ -1,3 +1,5 @@
+use super::error::Result;
+
 use crate::hardware::Cpu;
 use crate::hardware::registers::{Reg8, Reg16, RegF};
 
@@ -44,12 +46,32 @@ pub enum OpReg16 {
     RegSP,
 }
 
+impl OpReg16 {
+    pub fn read(&self, cpu: &Cpu) -> u16 {
+        cpu.registers.read_reg16(self.into())
+    }
+
+    pub fn write(&self, cpu: &mut Cpu, val: u16) {
+        cpu.registers.write_reg16(self.into(), val);
+    }
+}
+
 #[derive(Debug)]
 pub enum OpReg16Stk {
     RegBC,
     RegDE,
     RegHL,
     RegAF,
+}
+
+impl OpReg16Stk {
+    pub fn read(&self, cpu: &Cpu) -> u16 {
+        cpu.registers.read_reg16(self.into())
+    }
+
+    pub fn write(&self, cpu: &mut Cpu, val: u16) {
+        cpu.registers.write_reg16(self.into(), val);
+    }
 }
 
 #[derive(Debug)]
@@ -61,7 +83,17 @@ pub enum OpReg16Mem {
 }
 
 impl OpReg16Mem {
-    pub fn to_addr(&self, cpu: &mut Cpu) -> u16 {
+    pub fn read_and_step(&self, cpu: &mut Cpu) -> u8 {
+        let addr = self.to_addr(cpu);
+        cpu.memory.read8(addr)
+    }
+
+    pub fn write_and_step(&self, cpu: &mut Cpu, val: u8) {
+        let addr = self.to_addr(cpu);
+        cpu.memory.write8(addr, val);
+    }
+    
+    fn to_addr(&self, cpu: &mut Cpu) -> u16 {
         let reg = match self {
             Self::RegBC => Reg16::BC,
             Self::RegDE => Reg16::DE,
@@ -71,8 +103,8 @@ impl OpReg16Mem {
         
         // Update HL after it's read
         match self {
-            Self::RegIncHL => cpu.registers.write_reg16(Reg16::HL, addr + 1),
-            Self::RegDecHL => cpu.registers.write_reg16(Reg16::HL, addr - 1),
+            Self::RegIncHL => cpu.registers.write_reg16(Reg16::HL, addr.wrapping_add(1)),
+            Self::RegDecHL => cpu.registers.write_reg16(Reg16::HL, addr.wrapping_sub(1)),
             _ => {},
         };
 

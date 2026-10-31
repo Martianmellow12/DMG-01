@@ -73,7 +73,7 @@ impl Instruction {
         // idx always points at the instr (skipping 0xCB)
         let pc = cpu.registers.read_reg16(Reg16::PC);
         if cpu.memory.read8(pc) == 0xCB {
-            idx = pc + 1;
+            idx = pc.wrapping_add(1);
             cb = true;
         } else {
             idx = pc;
@@ -85,7 +85,7 @@ impl Instruction {
 
         Ok(if LD_R16_IMM16.check(instr, cb) {
             let dest = Self::dec_r16(instr, 4);
-            let imm16 = cpu.memory.read16(idx + 1)?;
+            let imm16 = cpu.memory.read16(idx.wrapping_add(1));
             Instruction::LdR16Imm16 { dest, imm16 }
         }
 
@@ -116,7 +116,7 @@ impl Instruction {
 
         else if LD_R8_IMM8.check(instr, cb) {
             let dest = Self::dec_r8(instr, 3);
-            let imm8 = cpu.memory.read8(idx + 1);
+            let imm8 = cpu.memory.read8(idx.wrapping_add(1));
             Instruction::LdR8Imm8 { dest, imm8 }
         }
 
@@ -125,13 +125,13 @@ impl Instruction {
         }
 
         else if JR_IMM8.check(instr, cb) {
-            let imm8 = cpu.memory.read8(idx + 1);
+            let imm8 = cpu.memory.read8(idx.wrapping_add(1));
             Instruction::JrImm8 { imm8 }
         }
 
         else if JR_COND_IMM8.check(instr, cb) {
             let cond = Self::dec_cond(instr, 3);
-            let imm8 = cpu.memory.read8(idx + 1);
+            let imm8 = cpu.memory.read8(idx.wrapping_add(1));
             Instruction::JrCondImm8 { cond, imm8 }
         }
 
@@ -168,12 +168,12 @@ impl Instruction {
         // Block 3
 
         else if XOR_A_IMM8.check(instr, cb) {
-            let imm8 = cpu.memory.read8(idx + 1);
+            let imm8 = cpu.memory.read8(idx.wrapping_add(1));
             Instruction::XorAImm8 { imm8 }
         }
 
         else if CP_A_IMM8.check(instr, cb) {
-            let imm8 = cpu.memory.read8(idx + 1);
+            let imm8 = cpu.memory.read8(idx.wrapping_add(1));
             Instruction::CpAImm8 { imm8 }
         }
 
@@ -182,7 +182,7 @@ impl Instruction {
         }
 
         else if CALL_IMM16.check(instr, cb) {
-            let imm16 = cpu.memory.read16(idx + 1)?;
+            let imm16 = cpu.memory.read16(idx.wrapping_add(1));
             Instruction::CallImm16 { imm16 }
         }
 
@@ -201,17 +201,17 @@ impl Instruction {
         }
 
         else if LDH_IMM8MEM_A.check(instr, cb) {
-            let imm8 = cpu.memory.read8(idx + 1);
+            let imm8 = cpu.memory.read8(idx.wrapping_add(1));
             Instruction::LdhImm8MemA { imm8 }
         }
 
         else if LD_IMM16MEM_A.check(instr, cb) {
-            let imm16 = cpu.memory.read16(idx + 1)?;
+            let imm16 = cpu.memory.read16(idx.wrapping_add(1));
             Instruction::LdImm16MemA { imm16 }
         }
 
         else if LDH_A_IMM8MEM.check(instr, cb) {
-            let imm8 = cpu.memory.read8(idx + 1);
+            let imm8 = cpu.memory.read8(idx.wrapping_add(1));
             Instruction::LdhAImm8Mem { imm8 }
         }
 

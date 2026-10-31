@@ -49,6 +49,17 @@ impl From<&operands::OpReg16> for Reg16 {
     }
 }
 
+impl From<&operands::OpReg16Stk> for Reg16 {
+    fn from(value: &operands::OpReg16Stk) -> Self {
+        match value {
+            operands::OpReg16Stk::RegBC => Self::BC,
+            operands::OpReg16Stk::RegDE => Self::DE,
+            operands::OpReg16Stk::RegHL => Self::HL,
+            operands::OpReg16Stk::RegAF => Self::AF,
+        }
+    }
+}
+
 #[derive(Debug, Copy, Clone)]
 pub enum RegF {
     Fz,
@@ -127,10 +138,10 @@ impl RegisterFile {
         match reg {
             Reg16::AF => {
                 let mut result = (self.reg_a as u16) << 8;
-                if self.reg_fz { result &= 0xFF80 };
-                if self.reg_fn { result &= 0xFF40 };
-                if self.reg_fh { result &= 0xFF20 };
-                if self.reg_fc { result &= 0xFF10 };
+                if self.reg_fz { result |= 0x0080 };
+                if self.reg_fn { result |= 0x0040 };
+                if self.reg_fh { result |= 0x0020 };
+                if self.reg_fc { result |= 0x0010 };
                 result
             },
             Reg16::BC => ((self.reg_b as u16) << 8) | (self.reg_c as u16),
