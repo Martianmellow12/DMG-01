@@ -30,18 +30,17 @@ impl Cpu {
     }
 
     // Memory functions
-    pub fn push16(&mut self, val: u16) -> Result<()> {
+    pub fn push16(&mut self, val: u16) {
         let sp = self.registers.read_reg16(registers::Reg16::SP);
         self.memory.write16(sp.wrapping_sub(2), val);
         self.registers.write_reg16(registers::Reg16::SP, sp.wrapping_sub(2));
-        Ok(())
     }
 
-    pub fn pop16(&mut self) -> Result<u16> {
+    pub fn pop16(&mut self) -> u16 {
         let sp = self.registers.read_reg16(registers::Reg16::SP);
         let result = self.memory.read16(sp);
         self.registers.write_reg16(registers::Reg16::SP, sp.wrapping_add(2));
-        Ok(result)
+        result
     }
 
     // Debug functions

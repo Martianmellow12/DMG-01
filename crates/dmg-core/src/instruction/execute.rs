@@ -30,6 +30,11 @@ impl Instruction {
                 cpu.registers.write_reg8(Reg8::A, val);
                 2
             },
+            Self::IncR16 { op } => {
+                let val = op.read(cpu);
+                op.write(cpu, val.wrapping_add(1));
+                2
+            },
             Self::IncR8 { op } => {
                 let reg_val = op.read(cpu);
                 op.write(cpu, reg_val.wrapping_add(1));
@@ -68,6 +73,11 @@ impl Instruction {
                 
                 1
             },
+            Self::JrImm8 { imm8 } => {
+                let jump_addr = cpu.registers.calc_offset_pc(*imm8 as i8);
+                cpu.registers.write_reg16(Reg16::PC, jump_addr);
+                3
+            },
             Self::JrCondImm8 { cond, imm8 } => {
                 let jump_addr = cpu.registers.calc_offset_pc(*imm8 as i8);
                 let do_jump = cond.check(cpu);
@@ -102,20 +112,34 @@ impl Instruction {
             },
 
             // Block 3
+            Self::CpAImm8 { imm8 } => {
+                let a_val = cpu.registers.read_reg8(Reg8::A);
+                let f_h = (a_val & 0xF) < (*imm8 & 0xF);
+                cpu.registers.write_regf(RegF::Fz, a_val == *imm8);
+                cpu.registers.write_regf(RegF::Fn, true);
+                cpu.registers.write_regf(RegF::Fh, f_h);
+                cpu.registers.write_regf(RegF::Fc, *imm8 > a_val);
+                2
+            },
+            Self::Ret => {
+                let val = cpu.pop16();
+                cpu.registers.write_reg16(Reg16::PC, val);
+                4
+            },
             Self::CallImm16 { imm16 } => {
                 let pc = cpu.registers.read_reg16(Reg16::PC);
-                cpu.push16(pc)?;
+                cpu.push16(pc);
                 cpu.registers.write_reg16(Reg16::PC, *imm16);
                 6
             },
             Self::PopR16Stk { reg } => {
-                let val = cpu.pop16()?;
+                let val = cpu.pop16();
                 reg.write(cpu, val);
                 3
             },
             Self::PushR16Stk { reg } => {
                 let val = reg.read(cpu);
-                cpu.push16(val)?;
+                cpu.push16(val);
                 4
             },
             Self::LdhCmemA => {
@@ -128,6 +152,16 @@ impl Instruction {
                 let addr = 0xFF00 + (*imm8 as u16);
                 let val = cpu.registers.read_reg8(Reg8::A);
                 cpu.memory.write8(addr, val);
+                3
+            },
+            Self::LdImm16MemA { imm16 } => {
+                let val = cpu.registers.read_reg8(Reg8::A);
+                cpu.memory.write8(*imm16, val);
+                4
+            },
+            Self::LdhAImm8Mem { imm8 } => {
+                let val = cpu.memory.read8(0xFF00 + (*imm8 as u16));
+                cpu.registers.write_reg8(Reg8::A, val);
                 3
             },
 
