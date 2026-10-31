@@ -1,5 +1,5 @@
 pub mod registers;
-pub mod memory;
+pub mod bus;
 pub mod error;
 
 use super::instruction::Instruction;
