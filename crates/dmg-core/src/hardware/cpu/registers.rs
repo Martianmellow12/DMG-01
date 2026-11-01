@@ -1,6 +1,5 @@
-use crate::instruction::operands;
-
-use super::error::{HardwareError, Result};
+use crate::software::instruction::operands;
+use crate::hardware::error::{HardwareError, Result};
 
 #[derive(Debug, Copy, Clone)]
 pub enum Reg8 {

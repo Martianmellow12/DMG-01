@@ -1,5 +1,5 @@
-use crate::hardware::Cpu;
-use crate::hardware::registers::{Reg8, Reg16, RegF};
+use crate::hardware::cpu::Cpu;
+use crate::hardware::cpu::registers::{Reg8, Reg16, RegF};
 
 use super::Instruction;
 use super::error::Result;
@@ -145,22 +145,22 @@ impl Instruction {
             Self::LdhCmemA => {
                 let addr = 0xFF00 + cpu.registers.read_reg8(Reg8::C) as u16;
                 let val = cpu.registers.read_reg8(Reg8::A);
-                cpu.memory.write8(addr, val);
+                cpu.bus.write8(addr, val);
                 2
             },
             Self::LdhImm8MemA { imm8 } => {
                 let addr = 0xFF00 + (*imm8 as u16);
                 let val = cpu.registers.read_reg8(Reg8::A);
-                cpu.memory.write8(addr, val);
+                cpu.bus.write8(addr, val);
                 3
             },
             Self::LdImm16MemA { imm16 } => {
                 let val = cpu.registers.read_reg8(Reg8::A);
-                cpu.memory.write8(*imm16, val);
+                cpu.bus.write8(*imm16, val);
                 4
             },
             Self::LdhAImm8Mem { imm8 } => {
-                let val = cpu.memory.read8(0xFF00 + (*imm8 as u16));
+                let val = cpu.bus.read8(0xFF00 + (*imm8 as u16));
                 cpu.registers.write_reg8(Reg8::A, val);
                 3
             },
