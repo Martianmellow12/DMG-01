@@ -1,7 +1,7 @@
-use super::error::Result;
+use crate::software::error::Result;
 
-use crate::hardware::Cpu;
-use crate::hardware::registers::{Reg8, Reg16, RegF};
+use crate::hardware::cpu::Cpu;
+use crate::hardware::cpu::registers::{Reg8, Reg16, RegF};
 
 #[derive(Debug)]
 pub enum OpReg8 {
@@ -15,7 +15,7 @@ impl OpReg8 {
             Self::Reg(reg) => cpu.registers.read_reg8(*reg),
             Self::IndirectHL => {
                 let addr = cpu.registers.read_reg16(Reg16::HL);
-                cpu.memory.read8(addr)
+                cpu.bus.read8(addr)
             },
         }
     }
@@ -25,7 +25,7 @@ impl OpReg8 {
             Self::Reg(reg) => cpu.registers.write_reg8(*reg, val),
             Self::IndirectHL => {
                 let addr = cpu.registers.read_reg16(Reg16::HL);
-                cpu.memory.write8(addr, val);
+                cpu.bus.write8(addr, val);
             },
         }
     }
@@ -85,12 +85,12 @@ pub enum OpReg16Mem {
 impl OpReg16Mem {
     pub fn read_and_step(&self, cpu: &mut Cpu) -> u8 {
         let addr = self.to_addr(cpu);
-        cpu.memory.read8(addr)
+        cpu.bus.read8(addr)
     }
 
     pub fn write_and_step(&self, cpu: &mut Cpu, val: u8) {
         let addr = self.to_addr(cpu);
-        cpu.memory.write8(addr, val);
+        cpu.bus.write8(addr, val);
     }
     
     fn to_addr(&self, cpu: &mut Cpu) -> u16 {
