@@ -1,7 +1,6 @@
 pub mod operands;
 pub mod decode;
 pub mod execute;
-pub mod error;
 
 use operands::{OpReg8, OpReg16, OpReg16Stk, OpReg16Mem, OpCond, OpBitIdx};
 

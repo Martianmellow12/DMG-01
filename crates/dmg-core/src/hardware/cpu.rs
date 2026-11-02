@@ -1,5 +1,6 @@
 pub mod registers;
 
+use crate::software::gamerom::GameRom;
 use crate::software::instruction::Instruction;
 
 use super::error::Result;
@@ -10,13 +11,15 @@ use registers::{RegisterFile};
 pub struct Cpu {
     pub registers: RegisterFile,
     pub bus: Bus,
+    pub gamerom: GameRom,
 }
 
 impl Cpu {
-    pub fn new(en_log: bool) -> Self {
+    pub fn new(gamerom: GameRom, en_log: bool) -> Self {
         Self {
             registers: RegisterFile::new(),
-            bus: Bus::new(4, 1),
+            bus: Bus::new(&gamerom),
+            gamerom
         }
     }
 

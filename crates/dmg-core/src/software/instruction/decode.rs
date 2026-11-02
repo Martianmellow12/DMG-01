@@ -1,7 +1,7 @@
 use crate::hardware::cpu::Cpu;
 use crate::hardware::cpu::registers::{Reg8, Reg16, RegF};
 
-use super::error::{InstructionError, Result};
+use crate::software::error::{InstructionError, Result};
 use super::Instruction;
 
 use super::{OpReg8, OpReg16, OpReg16Stk, OpReg16Mem, OpCond, OpBitIdx};

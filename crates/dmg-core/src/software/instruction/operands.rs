@@ -1,4 +1,4 @@
-use super::error::Result;
+use crate::software::error::Result;
 
 use crate::hardware::cpu::Cpu;
 use crate::hardware::cpu::registers::{Reg8, Reg16, RegF};

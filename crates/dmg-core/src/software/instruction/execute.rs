@@ -2,7 +2,7 @@ use crate::hardware::cpu::Cpu;
 use crate::hardware::cpu::registers::{Reg8, Reg16, RegF};
 
 use super::Instruction;
-use super::error::Result;
+use crate::software::error::Result;
 
 impl Instruction {
     pub fn execute(&self, cpu: &mut Cpu) -> Result<usize>{
