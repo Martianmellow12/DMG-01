@@ -28,7 +28,8 @@ impl Cpu {
         let instr = Instruction::decode(self).unwrap();
         let pc = self.registers.read_reg16(registers::Reg16::PC);
         println!("PC=0x{:x?} - [{}] {:x?}", pc, instr.size(), instr);
-        instr.execute(self)?;
+        let cycles = instr.execute(self)?;
+        self.bus.tick(cycles);
         Ok(())
     }
 

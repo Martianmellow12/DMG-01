@@ -27,6 +27,12 @@ impl Bus {
             dummy_io: [0; 0x0080],
         }
     }
+
+    pub fn tick(&mut self, cycles: usize) {
+        for i in 0..cycles {
+            self.ppu.tick();
+        }
+    }
     
     pub fn read8(&self, addr: u16) -> u8 {
         // Catch BROM accesses
@@ -34,7 +40,7 @@ impl Bus {
             return brom[addr as usize];
         }
         
-        match addr {
+        let result = match addr {
             0x0000..=0x7FFF => {
                 self.mbc.read(addr)
             },
@@ -43,6 +49,10 @@ impl Bus {
             },
             0xA000..=0xBFFF => {
                 self.mbc.read(addr)
+            },
+            // LCD registers
+            0xFF40..=0xFF4B => {
+                self.ppu.read(addr)
             },
             0xFF00..=0xFF7F => {
                 self.dummy_io[(addr - 0xFF00) as usize]
@@ -54,7 +64,10 @@ impl Bus {
                 todo!("Implement remaining bus read");
                 0
             }
-        }
+        };
+
+        println!("BUS READ [0x{:x}] -> 0x{:x}", addr, result);
+        result
     }
 
     pub fn write8(&mut self, addr: u16, val: u8) {
@@ -68,6 +81,10 @@ impl Bus {
             0xA000..=0xBFFF => {
                 self.mbc.write(addr, val);
             },
+            // LCD registers
+            0xFF40..=0xFF4B => {
+                self.ppu.write(addr, val);
+            },
             0xFF00..=0xFF7F => {
                 self.dummy_io[(addr - 0xFF00) as usize] = val;
             },
@@ -78,6 +95,8 @@ impl Bus {
                 todo!("Implement remaining bus writes");
             }
         }
+
+        println!("BUS WRITE 0x{:x} -> [0x{:x}]", val, addr);
     }
 
     pub fn read16(&self, addr: u16) -> u16 {
