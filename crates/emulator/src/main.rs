@@ -8,7 +8,7 @@ fn run_emulator() -> Result<(), Box<dyn std::error::Error>> {
     let gamerom = software::gamerom::GameRom::new(rom_path)?;
     
     println!("Create hardware assets...");
-    let mut cpu = hardware::cpu::Cpu::new(gamerom, true);
+    let mut cpu = hardware::cpu::Cpu::new(gamerom, false);
 
     println!("Load the boot ROM...");
     let brom_vec = std::fs::read("docs/dmg_boot/dmg_boot.bin")?;
@@ -22,7 +22,7 @@ fn run_emulator() -> Result<(), Box<dyn std::error::Error>> {
         144,
         WindowOptions { scale: Scale::X4, ..WindowOptions::default() },
     )?;
-    window.set_target_fps(60);
+    //window.set_target_fps(60);
 
     println!("Beginning execution...");
     loop {
@@ -36,7 +36,7 @@ fn run_emulator() -> Result<(), Box<dyn std::error::Error>> {
             std::process::exit(0);
         }
 
-        let frame_buf = cpu.get_frame().to_buf();
+        let frame_buf = cpu.get_frame_buf();
         window.update_with_buffer(&frame_buf, 160, 144)?;
         if !window.is_open() || window.is_key_down(Key::Escape) { break }
     }

@@ -1,6 +1,7 @@
 use crate::hardware::error::{HardwareError, Result};
 
 pub struct Ppu {
+    frame: Frame,
     vram: [u8; 0x2000],
     reg_lcdc: u8,
     reg_stat: u8,
@@ -13,6 +14,7 @@ pub struct Ppu {
 impl Ppu {
     pub fn new() -> Self {
         Ppu {
+            frame: Frame::new(),
             vram: [0; 0x2000],
             reg_lcdc: 0,
             reg_stat: 0,
@@ -25,6 +27,7 @@ impl Ppu {
 
     pub fn tick(&mut self) {
         self.reg_ly.inc();
+        self.frame.write_line(self.reg_ly.0 as usize, &[Pixel::L3; 160]);
     }
     
     pub fn read(&self, addr: u16) -> u8 {
@@ -54,10 +57,8 @@ impl Ppu {
     }
 
     // Rendering functions
-    pub fn get_frame(&self) -> Frame {
-        let pixels = vec![vec![Pixel::L2; 160]; 144];
-        let result = Frame(pixels);
-        result
+    pub fn get_frame_buf(&self) -> Vec<u32> {
+        self.frame.to_buf()
     }
 }
 
@@ -79,6 +80,14 @@ impl LcdYCoord {
 pub struct Frame(Vec<Vec<Pixel>>);
 
 impl Frame {
+    pub fn new() -> Self {
+        Frame(vec![vec![Pixel::L2; 160]; 144])
+    }
+    
+    pub fn write_line(&mut self, line_num: usize, line_data: &[Pixel; 160]) {
+        self.0[line_num] = line_data.to_vec();
+    }
+    
     pub fn to_buf(&self) -> Vec<u32> {
         let mut buf = Vec::new();
         for row in self.0.iter() {

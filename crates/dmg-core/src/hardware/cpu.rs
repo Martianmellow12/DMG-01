@@ -60,9 +60,9 @@ impl Cpu {
     }
 
     // Graphics functions
-    pub fn get_frame(&self) -> Frame {
+    pub fn get_frame_buf(&self) -> Vec<u32> {
         // TODO: made PPU public; find a better way
-        self.bus.ppu.get_frame()
+        self.bus.ppu.get_frame_buf()
     }
 
     // Debug functions
