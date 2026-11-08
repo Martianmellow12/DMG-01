@@ -27,7 +27,12 @@
             pkgs.pkg-config
           ];
 
-          buildInputs = [
+          buildInputs = with pkgs; [
+            xorg.libX11
+            xorg.libXcursor
+            xorg.libXrandr
+            xorg.libXi
+            libxkbcommon
           ];
 
           shellHook = ''
