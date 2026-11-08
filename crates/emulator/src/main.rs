@@ -36,8 +36,9 @@ fn run_emulator() -> Result<(), Box<dyn std::error::Error>> {
             std::process::exit(0);
         }
 
-        let frame_buf = cpu.get_frame_buf();
-        window.update_with_buffer(&frame_buf, 160, 144)?;
+        if let Some(frame_buf)  = cpu.get_frame_buf() {
+            window.update_with_buffer(&frame_buf, 160, 144)?;
+        }
         if !window.is_open() || window.is_key_down(Key::Escape) { break }
     }
     Ok(())

@@ -1,5 +1,7 @@
 use crate::hardware::error::{HardwareError, Result};
 
+use rand;
+
 pub struct Ppu {
     frame: Frame,
     vram: [u8; 0x2000],
@@ -20,14 +22,21 @@ impl Ppu {
             reg_stat: 0,
             reg_scx: 0,
             reg_scy: 0,
-            reg_ly: LcdYCoord(0),
+            reg_ly: LcdYCoord::new(),
             reg_bgp: 0,
         }
     }
 
     pub fn tick(&mut self) {
-        self.reg_ly.inc();
-        self.frame.write_line(self.reg_ly.0 as usize, &[Pixel::L3; 160]);
+        // Update the LCD line we're on
+        if self.reg_ly.read() < 144 && self.reg_ly.incremented() {
+            //self.frame.write_line(self.reg_ly.read() as usize, &[Pixel::L3; 160]);
+            self.frame.randomize_line(self.reg_ly.read() as usize);
+        }
+        self.reg_ly.step();
+        if self.reg_ly.read() == 144 && self.reg_ly.incremented() {
+            self.frame.frame_ready = true;
+        }
     }
     
     pub fn read(&self, addr: u16) -> u8 {
@@ -57,40 +66,64 @@ impl Ppu {
     }
 
     // Rendering functions
-    pub fn get_frame_buf(&self) -> Vec<u32> {
-        self.frame.to_buf()
+    pub fn get_frame_buf(&mut self) -> Option<Vec<u32>> {
+        if self.frame.frame_ready {
+            self.frame.frame_ready = false;
+            Some(self.frame.to_buf())
+        } else {
+            None
+        }
     }
 }
 
-struct LcdYCoord(u16);
+struct LcdYCoord(usize);
 
 impl LcdYCoord {
-    pub fn inc(&mut self) {
+    pub fn new() -> Self {
+        Self(0)
+    }
+
+    pub fn step(&mut self) {
         self.0 += 1;
         if (self.0 / 114) > 153 {
             self.0 = 0;
         }
     }
 
+    pub fn incremented(&self) -> bool {
+        self.0 % 114 == 0
+    }
+
     pub fn read(&self) -> u8 {
-        (self.0 / 114) as u8
+        self.read_ly() as u8
+    }
+
+    // Helper functions
+    fn read_ly(&self) -> usize {
+        (self.0 / 114)
     }
 }
 
-pub struct Frame(Vec<Vec<Pixel>>);
+pub struct Frame {
+    frame_vec: Vec<Vec<Pixel>>,
+    frame_ready: bool,
+}
 
 impl Frame {
     pub fn new() -> Self {
-        Frame(vec![vec![Pixel::L2; 160]; 144])
+        Frame {
+            frame_vec: vec![vec![Pixel::L2; 160]; 144],
+            frame_ready: false,
+        }
     }
-    
+
     pub fn write_line(&mut self, line_num: usize, line_data: &[Pixel; 160]) {
-        self.0[line_num] = line_data.to_vec();
+        self.frame_vec[line_num] = line_data.to_vec();
     }
     
     pub fn to_buf(&self) -> Vec<u32> {
         let mut buf = Vec::new();
-        for row in self.0.iter() {
+        for row in self.frame_vec.iter() {
             for pixel in row {
                 let val = match pixel {
                     Pixel::L0 => 0x00000000,
@@ -102,6 +135,19 @@ impl Frame {
             }
         }
         buf
+    }
+
+    // Debug functions
+    pub fn randomize_line(&mut self, line_num: usize) {
+        let rand_data: Vec<u8> = (0..160)
+            .map(|_| rand::random_range(0..=3))
+            .collect();
+        for i in 0..self.frame_vec[line_num].len() {
+            self.frame_vec[line_num][i] = match rand_data[i] {
+                0 => Pixel::L0,
+                _ => Pixel::L3,
+            }
+        }
     }
 }
 
