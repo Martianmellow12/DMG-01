@@ -6,20 +6,25 @@ use crate::software::instruction::Instruction;
 use super::error::Result;
 use super::bus::Bus;
 use super::mbc::Mbc;
+use super::ppu::Frame;
 use registers::{RegisterFile};
 
 pub struct Cpu {
     pub registers: RegisterFile,
     pub bus: Bus,
     pub gamerom: GameRom,
+
+    en_log: bool,
 }
 
 impl Cpu {
     pub fn new(gamerom: GameRom, en_log: bool) -> Self {
         Self {
             registers: RegisterFile::new(),
-            bus: Bus::new(&gamerom),
-            gamerom
+            bus: Bus::new(&gamerom, en_log),
+            gamerom,
+
+            en_log,
         }
     }
 
@@ -27,8 +32,15 @@ impl Cpu {
         // TODO: debug code, fix this later
         let instr = Instruction::decode(self).unwrap();
         let pc = self.registers.read_reg16(registers::Reg16::PC);
-        println!("PC=0x{:x?} - [{}] {:x?}", pc, instr.size(), instr);
-        let cycles = instr.execute(self)?;
+        self.log(format!("PC=0x{:x?} - [{}] {:x?}", pc, instr.size(), instr));
+        let cycles = match instr.execute(self) {
+            Ok(cycles) => cycles,
+            Err(err) => {
+                println!("Fault when executing instruction");
+                println!("PC=0x{:x?} - [{}] {:x?}", pc, instr.size(), instr);
+                return Err(err);
+            },
+        };
         self.bus.tick(cycles);
         Ok(())
     }
@@ -47,10 +59,23 @@ impl Cpu {
         result
     }
 
+    // Graphics functions
+    pub fn get_frame(&self) -> Frame {
+        // TODO: made PPU public; find a better way
+        self.bus.ppu.get_frame()
+    }
+
     // Debug functions
     pub fn dump_state(&self) {
+        if !self.en_log { return }
         println!("Registers");
         println!("=================");
         println!("{}", self.registers);
+    }
+
+    fn log(&self, msg: String) {
+        if self.en_log {
+            println!("{}", msg);
+        }
     }
 }

@@ -5,3 +5,4 @@ edition = "2024"
 
 [dependencies]
 dmg-core = { path = "../dmg-core" }
+minifb = "0.29.0"

@@ -9,6 +9,7 @@ pub type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 #[derive(Debug)]
 pub enum InstructionError {
     UnknownInstruction { instr: u8, cb: bool},
+    ExecNotImplemented, // TODO: Debug for development, remove
 }
 
 impl std::error::Error for InstructionError {}

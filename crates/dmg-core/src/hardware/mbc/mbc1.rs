@@ -18,9 +18,10 @@ pub struct Mbc1 {
 impl Mbc1 {
     pub fn new(gamerom: &GameRom) -> Self {
         let rom_banks = gamerom.rom_size.num_banks();
-        let ram_banks = gamerom.rom_size.num_banks();
+        let ram_banks = gamerom.ram_size.num_banks();
+        assert_eq!(rom_banks * 0x4000, gamerom.bytes.len());
         Mbc1 {
-            rom: vec![0; rom_banks * 0x4000],
+            rom: gamerom.bytes.clone(),
             ram: vec![0; ram_banks * 0x2000],
             ram_en: false,
             rom_bank: 0,
@@ -32,9 +33,9 @@ impl Mbc1 {
     pub fn read(&self, addr: u16) -> u8 {
         match addr {
             // TODO: support reads from bank X0
-            0x0000..0x3FFF => self.rom[addr as usize],
-            0x4000..0x7FFF => self.rom[addr as usize],
-            0xA000..0xBFFF => self.ram[(addr - 0xA000) as usize],
+            0x0000..=0x3FFF => self.rom[addr as usize],
+            0x4000..=0x7FFF => self.rom[addr as usize],
+            0xA000..=0xBFFF => self.ram[(addr - 0xA000) as usize],
             _ => {
                 todo!("Implement error handling for bad MBC accesses");
                 0
@@ -44,7 +45,7 @@ impl Mbc1 {
 
     pub fn write(&mut self, addr: u16, val: u8) {
         match addr {
-            0xA000..0xBFFF => self.ram[(addr - 0xA000) as usize] = val,
+            0xA000..=0xBFFF => self.ram[(addr - 0xA000) as usize] = val,
             _ => {
                 todo!("Implement all write stuff")
             }

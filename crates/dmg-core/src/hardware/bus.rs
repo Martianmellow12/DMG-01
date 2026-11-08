@@ -8,20 +8,24 @@ use super::ppu::Ppu;
 pub struct Bus {
     brom: Option<[u8; 256]>,
     mbc: Mbc,
-    ppu: Ppu,
+    pub ppu: Ppu,
     hram: [u8; 0x007F],
+
+    en_log: bool,
     
     // TODO: dummy spaces, replace
     dummy_io: [u8; 0x0080],
 }
 // TODO: implement this
 impl Bus {
-    pub fn new(gamerom: &GameRom) -> Self {
+    pub fn new(gamerom: &GameRom, en_log: bool) -> Self {
         Bus {
             brom: None,
             mbc: Mbc::new(gamerom),
             ppu: Ppu::new(),
             hram: [0; 0x007F],
+
+            en_log,
 
             // TODO: dummy spaces, replace
             dummy_io: [0; 0x0080],
@@ -66,7 +70,9 @@ impl Bus {
             }
         };
 
-        println!("BUS READ [0x{:x}] -> 0x{:x}", addr, result);
+        self.log(
+            format!("BUS READ [0x{:x}] -> 0x{:x}", addr, result)
+        );
         result
     }
 
@@ -95,8 +101,9 @@ impl Bus {
                 todo!("Implement remaining bus writes");
             }
         }
-
-        println!("BUS WRITE 0x{:x} -> [0x{:x}]", val, addr);
+        self.log(
+            format!("BUS WRITE 0x{:x} -> [0x{:x}]", val, addr)
+        );
     }
 
     pub fn read16(&self, addr: u16) -> u16 {
@@ -114,5 +121,11 @@ impl Bus {
 
     pub fn load_brom(&mut self, brom_bytes: [u8; 256]) {
         self.brom = Some(brom_bytes);
+    }
+
+    pub fn log(&self, msg: String) {
+        if self.en_log {
+            println!("{}", msg);
+        }
     }
 }

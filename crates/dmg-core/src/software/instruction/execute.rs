@@ -2,7 +2,7 @@ use crate::hardware::cpu::Cpu;
 use crate::hardware::cpu::registers::{Reg8, Reg16, RegF};
 
 use super::Instruction;
-use crate::software::error::Result;
+use crate::software::error::{InstructionError, Result};
 
 impl Instruction {
     pub fn execute(&self, cpu: &mut Cpu) -> Result<usize>{
@@ -97,6 +97,19 @@ impl Instruction {
             },
 
             // Block 2
+            Self::SubAR8 { op } => {
+                let a_val = cpu.registers.read_reg8(Reg8::A);
+                let reg_val = op.read(cpu);
+                let result = a_val.wrapping_sub(reg_val);
+                let f_h = (a_val & 0xF) < (reg_val & 0xF);
+                cpu.registers.write_reg8(Reg8::A, result);
+
+                cpu.registers.write_regf(RegF::Fz, a_val == reg_val);
+                cpu.registers.write_regf(RegF::Fn, true);
+                cpu.registers.write_regf(RegF::Fh, f_h);
+                cpu.registers.write_regf(RegF::Fc, a_val < reg_val);
+                if op.is_indirect() { 2 } else { 1 }
+            },
             Self::XorAR8 { op } => {
                 let a_val = cpu.registers.read_reg8(Reg8::A);
                 let reg_val = op.read(cpu);
@@ -108,6 +121,16 @@ impl Instruction {
                 cpu.registers.clear_flag(RegF::Fh);
                 cpu.registers.clear_flag(RegF::Fc);
                 
+                if op.is_indirect() { 2 } else { 1 }
+            },
+            Self::CpAR8 { op } => {
+                let a_val = cpu.registers.read_reg8(Reg8::A);
+                let reg_val = op.read(cpu);
+                let f_h = (a_val & 0xF) < (reg_val & 0xF);
+                cpu.registers.write_regf(RegF::Fz, a_val == reg_val);
+                cpu.registers.write_regf(RegF::Fn, true);
+                cpu.registers.write_regf(RegF::Fh, f_h);
+                cpu.registers.write_regf(RegF::Fc, a_val < reg_val);
                 if op.is_indirect() { 2 } else { 1 }
             },
 
@@ -190,7 +213,7 @@ impl Instruction {
                 if op.is_indirect() { 3 } else { 2 }
             }
 
-            _ => todo!("Instruction not yet implemented"),
+            _ => return Err(InstructionError::ExecNotImplemented.into()),
         })
     }
 }

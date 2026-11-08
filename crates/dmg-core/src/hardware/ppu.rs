@@ -52,6 +52,13 @@ impl Ppu {
             other => panic!("Attempted VRAM write at 0x{:x}", other),
         }
     }
+
+    // Rendering functions
+    pub fn get_frame(&self) -> Frame {
+        let pixels = vec![vec![Pixel::L2; 160]; 144];
+        let result = Frame(pixels);
+        result
+    }
 }
 
 struct LcdYCoord(u16);
@@ -67,4 +74,32 @@ impl LcdYCoord {
     pub fn read(&self) -> u8 {
         (self.0 / 114) as u8
     }
+}
+
+pub struct Frame(Vec<Vec<Pixel>>);
+
+impl Frame {
+    pub fn to_buf(&self) -> Vec<u32> {
+        let mut buf = Vec::new();
+        for row in self.0.iter() {
+            for pixel in row {
+                let val = match pixel {
+                    Pixel::L0 => 0x00000000,
+                    Pixel::L1 => 0x00555555,
+                    Pixel::L2 => 0x00AAAAAA,
+                    Pixel::L3 => 0x00FFFFFF,
+                };
+                buf.push(val);
+            }
+        }
+        buf
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum Pixel {
+    L0,
+    L1,
+    L2,
+    L3,
 }

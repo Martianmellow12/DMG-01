@@ -7,6 +7,7 @@ const ROM_SIZE_OFF: usize = HDR_OFF + 0x48;
 const RAM_SIZE_OFF: usize = HDR_OFF + 0x49;
 
 pub struct GameRom {
+    pub bytes: Vec<u8>,
     pub cart_type: CartridgeType,
     pub rom_size: RomSize,
     pub ram_size: RamSize,
@@ -24,6 +25,7 @@ impl GameRom {
         let ram_size = RamSize::try_from(bytes[RAM_SIZE_OFF])?;
         
         Ok(GameRom {
+            bytes,
             cart_type,
             rom_size,
             ram_size,
