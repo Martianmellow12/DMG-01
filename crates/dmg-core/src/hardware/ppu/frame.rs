@@ -23,10 +23,10 @@ impl Frame {
         for row in self.frame_vec.iter() {
             for pixel in row {
                 let val = match pixel {
-                    Pixel::L0 => 0x00000000,
-                    Pixel::L1 => 0x00555555,
-                    Pixel::L2 => 0x00AAAAAA,
-                    Pixel::L3 => 0x00FFFFFF,
+                    Pixel::L0 => 0x00FFFFFF,
+                    Pixel::L1 => 0x00AAAAAA,
+                    Pixel::L2 => 0x00555555,
+                    Pixel::L3 => 0x00000000,
                 };
                 buf.push(val);
             }

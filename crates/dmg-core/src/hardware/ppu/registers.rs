@@ -12,6 +12,8 @@ use scx::RegScx;
 use ly::RegLy;
 use bgp::RegBgp;
 
+use super::video_mode;
+
 pub struct RegisterFile {
     pub lcdc: RegLcdc,
     pub stat: RegStat,
@@ -34,6 +36,10 @@ impl RegisterFile {
     }
 
     pub fn tick(&mut self) {
-        self.ly.tick();
+        if self.lcdc.lcd_en() {
+            self.ly.tick();
+        } else {
+            self.ly.reset();
+        }
     }
 }

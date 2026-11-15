@@ -1,6 +1,6 @@
 use super::pixel::Pixel;
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub enum Tile {
     Obj([[Pixel; 8]; 8]),
     BgWin([[Pixel; 8]; 8]),
