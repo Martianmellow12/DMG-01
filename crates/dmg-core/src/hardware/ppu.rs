@@ -32,6 +32,8 @@ impl Ppu {
         if self.reg_ly.read() < 144 && self.reg_ly.incremented() {
             //self.frame.write_line(self.reg_ly.read() as usize, &[Pixel::L3; 160]);
             self.frame.randomize_line(self.reg_ly.read() as usize);
+            let test_tile = self.get_obj_tile(25).unwrap();
+            self.frame.draw_obj_tile(test_tile, 0, 0);
         }
         self.reg_ly.step();
         if self.reg_ly.read() == 144 && self.reg_ly.incremented() {
@@ -63,6 +65,29 @@ impl Ppu {
             0xFF47 => self.reg_bgp = val,
             other => panic!("Attempted VRAM write at 0x{:x}", other),
         }
+    }
+
+    // Tile functions
+    pub fn get_obj_tile(&self, idx: u8) -> Result<Tile> {
+        let mut tilemap = [[Pixel::L0; 8]; 8];
+        for i in 0..8usize {
+            let addr = ((idx as u16) * 16) + ((i as u16) * 2);
+            tilemap[i] = self.parse_tile_line(addr)?;
+        }
+        Ok(Tile::new(tilemap))
+    }
+
+    fn parse_tile_line(&self, addr: u16) -> Result<[Pixel; 8]> {
+        let lsb = self.vram[addr as usize];
+        let msb = self.vram[addr.wrapping_add(1) as usize];
+        let mut result = [Pixel::L0; 8];
+        for i in 0..8 {
+            let l = (lsb >> (7 - i)) & 1;
+            let h = (msb >> (7 - i)) & 1;
+            let pixel_bits = (h << 1) | l;
+            result[i] = Pixel::try_from(pixel_bits)?;
+        }
+        Ok(result)
     }
 
     // Rendering functions
@@ -137,6 +162,25 @@ impl Frame {
         buf
     }
 
+    // Tile functions
+    pub fn draw_obj_tile(&mut self, tile: Tile, x_pos: usize, y_pos: usize) {
+        let tilemap = tile.get_tilemap();
+        for y in 0..8 {
+            for x in 0..8 {
+                let y_pos = y_pos + y;
+                let x_pos = x_pos + x;
+                if y_pos >= 144 { return }
+                if x_pos >= 160 { break }
+
+                // Color 0 is transparent for objects
+                match tilemap[y_pos][x_pos] {
+                    Pixel::L0 => (), // Transparency for objects
+                    other => self.frame_vec[y_pos][x_pos] = other,
+                }
+            }
+        }
+    }
+
     // Debug functions
     pub fn randomize_line(&mut self, line_num: usize) {
         let rand_data: Vec<u8> = (0..160)
@@ -157,4 +201,39 @@ pub enum Pixel {
     L1,
     L2,
     L3,
+}
+
+impl TryFrom<u8> for Pixel {
+    type Error = Box<dyn std::error::Error>;
+    
+    fn try_from(value: u8) -> Result<Pixel> {
+        Ok(match value {
+            0 => Pixel::L0,
+            1 => Pixel::L1,
+            2 => Pixel::L2,
+            3 => Pixel::L3,
+            // TODO: Fix errors to use String, not &str
+            _ => return Err(HardwareError::ConversionError(
+                //format!("Invalid pixel value {}", value)
+                "Invalid pixel value"
+            ).into())
+        })
+    }
+}
+
+#[derive(Debug)]
+pub struct Tile {
+    pixels: [[Pixel; 8]; 8],
+}
+
+impl Tile {
+    fn new(pixels: [[Pixel; 8]; 8]) -> Self {
+        Self {
+            pixels
+        }
+    }
+
+    pub fn get_tilemap(&self) -> &[[Pixel; 8]; 8] {
+        &self.pixels
+    }
 }
