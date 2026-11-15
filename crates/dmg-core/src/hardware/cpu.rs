@@ -5,8 +5,6 @@ use crate::software::instruction::Instruction;
 
 use super::error::Result;
 use super::bus::Bus;
-use super::mbc::Mbc;
-use super::ppu::Frame;
 use registers::{RegisterFile};
 
 pub struct Cpu {
@@ -60,9 +58,9 @@ impl Cpu {
     }
 
     // Graphics functions
-    pub fn get_frame(&self) -> Frame {
+    pub fn get_frame_buf(&mut self) -> Option<Vec<u32>> {
         // TODO: made PPU public; find a better way
-        self.bus.ppu.get_frame()
+        self.bus.ppu.get_frame_buf()
     }
 
     // Debug functions
