@@ -5,8 +5,6 @@ use crate::software::instruction::Instruction;
 
 use super::error::Result;
 use super::bus::Bus;
-use super::mbc::Mbc;
-use super::ppu::Frame;
 use registers::{RegisterFile};
 
 pub struct Cpu {
